@@ -1,0 +1,39 @@
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.log
+
+# --- IDEs ---
+.vscode/
+.idea/
+
+# --- Node (for Prettier / tooling only) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# Keep lockfile if you want reproducibility
+# (recommended: KEEP package-lock.json)
+# package-lock.json
+
+# --- Build / Generated docs ---
+dist/
+build/
+site/
+docs/.vitepress/dist/
+
+# --- Cache ---
+.cache/
+.temp/
+
+# --- Environment ---
+.env
+.env.*
+
+# --- Misc ---
+coverage/
