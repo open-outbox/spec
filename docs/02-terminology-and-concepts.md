@@ -233,3 +233,21 @@ Examples include:
 - filtering events by time range
 - inspecting retry counts
 - identifying stuck or unprocessed events
+
+---
+
+## Termination Condition
+
+A **termination condition** defines when an event is no longer eligible for automatic retry.
+
+When a termination condition is met:
+
+- the event MUST transition to `DEAD`
+- the event MUST NOT be retried automatically
+
+Termination conditions are implementation-defined and MAY include:
+
+- maximum number of attempts
+- time-based limits
+- explicit operator intervention
+- implementation-specific policies
