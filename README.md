@@ -38,7 +38,7 @@ Draft
 ## Document Index
 
 - [Introduction](docs/01-introduction.md)
-- [Core Concepts](docs/02-core-concepts.md)
+- [Terminology and Concepts](docs/02-terminology-and-concepts.md)
 - [Event Model](docs/03-event-model.md)
 - [Delivery Semantics](docs/04-delivery-semantics.md)
 - [Processing Lifecycle](docs/05-processing-lifecycle.md)
