@@ -111,8 +111,8 @@ Exactly-once processing requires **idempotent consumers** and is out of scope.
 ## 8. Conformance
 
 An implementation is compliant with OpenOutbox v1 if it:
+
 - preserves the event envelope semantics
 - enforces the state machine and invariants
 - correctly implements the claim/lease protocol
 - provides no-loss delivery under failures consistent with at-least-once semantics
-
