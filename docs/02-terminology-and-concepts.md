@@ -1,5 +1,18 @@
 # Terminology and Concepts
 
+## Application
+
+An **application** (or producer) is the component responsible for performing a state-changing operation (business logic) and persisting a corresponding [event](#event) into the [outbox store](#outbox-store).
+
+To maintain the guarantees of the outbox pattern, the application MUST:
+
+1. Generate a unique `event_id`.
+2. Ensure the event is written to the outbox store within the same atomic boundary (transaction) as the business state change.
+
+The application is considered the "source" of the event.
+
+---
+
 ## Event
 
 An **event** is a record representing a message intended to be published to an external system.
