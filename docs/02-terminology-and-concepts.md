@@ -80,11 +80,19 @@ Multiple relays MAY operate concurrently.
 
 A **claim** is a temporary ownership marker that allows a relay to process an event.
 
-A claim:
+### Lease
 
-- A claim MAY grant exclusive processing for a limited period of time.
-- MAY expire
-- DOES NOT guarantee that only one relay will ever process the event
+A **lease** (or visibility timeout) is the duration for which a [claim](#claim) is valid.
+
+- If the lease expires before the relay updates the event state, the event MUST become eligible for claiming again.
+- The event MAY then be claimed by the same relay or by another relay.
+- This mechanism prevents events from remaining stuck if a relay crashes, stalls, or fails to complete processing.
+
+### Concurrency Assumptions
+
+- A claim does NOT guarantee exactly-once processing.
+- A claim MAY expire.
+- A claim does NOT guarantee that only one relay will ever process the event.
 
 Implementations MUST assume that the same event can be processed more than once.
 
@@ -113,6 +121,25 @@ This specification assumes:
 
 ---
 
+## Idempotency
+
+**Idempotency** is the property where an operation can be applied multiple times without changing the result beyond the initial application.
+
+Since this specification defaults to **at-least-once delivery**:
+
+- Downstream consumers SHOULD be idempotent.
+- Consumers SHOULD use the `event_id` to detect and discard duplicate processing.
+
+---
+
+## Batch
+
+A **batch** is a collection of events retrieved from the outbox store and processed together in a single iteration of the relay's loop.
+
+Batching is used to improve throughput by reducing the number of round-trips to the storage and the publisher.
+
+---
+
 ## Delivery Guarantee
 
 A **delivery guarantee** defines how reliably events are delivered.
@@ -137,9 +164,13 @@ This means:
 
 ## Retry
 
-A **retry** is a subsequent publish attempt for an event that has not yet been successfully delivered.
+A **retry** is a subsequent publish attempt for an event that has not yet been successfully delivered or whose lease has expired.
 
 Retries occur automatically within the normal processing lifecycle and typically apply to events in a non-terminal state.
+
+### Backoff
+
+**Backoff** is the strategy of delaying retries to avoid overwhelming the system or the external broker during failures. This is typically implemented using the `available_at` field.
 
 ---
 
@@ -174,6 +205,16 @@ An **attempt** is a single publish execution for an event.
 An event MAY have multiple attempts as part of retries or replay.
 
 Implementations MAY track the number of attempts for each event.
+
+---
+
+## Correlation and Tracing
+
+**Correlation** is the ability to link an event back to the original request or transaction that produced it.
+
+**Tracing** refers to the end-to-end tracking of an event across system boundaries.
+
+Implementations SHOULD support the propagation of trace contexts (e.g., W3C Traceparent) via headers or metadata to enable distributed observability.
 
 ---
 

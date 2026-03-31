@@ -11,7 +11,7 @@ This specification defines a common behavioral model for outbox systems.
 
 This specification focuses on:
 
-- **event production**: application-side requirementsoutbox records
+- **event production**: application-side requirements
 - durable event storage
 - event claiming and processing
 - publishing to an external broker or transport
