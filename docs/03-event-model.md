@@ -29,6 +29,7 @@ A unique identifier for the event.
 
 - MUST be unique within the outbox store
 - MUST be immutable
+- SHOULD use a globally unique format (e.g., UUID or ULID) to facilitate distributed tracing and idempotency
 
 ---
 
@@ -48,7 +49,7 @@ The data to be delivered to the external system.
 
 - MAY be any structured or unstructured data
 - MUST be treated as opaque by the outbox system
-- MUST NOT be modified by the relay
+- MUST NOT be modified after persistence, as it defines the canonical content to be delivered
 
 ---
 
@@ -93,28 +94,30 @@ A value used for routing or partitioning in the target transport.
 
 A value used to define ordering scope.
 
-- When relay-level ordering is enabled, events with the same ordering key MUST be processed in order according to the configured ordering rules.
+- When ordering is enabled, events with the same ordering key MUST be processed in order
 
 ---
 
 ### metadata
 
 Additional information associated with the event for internal or operational use.
+**This data is NOT intended for the external system.**
 
 - MAY include tracing identifiers, source information, or annotations
 - MAY be used by the relay for processing, debugging, or observability
 - MUST NOT affect delivery semantics unless explicitly defined
 - MUST NOT be assumed to be propagated to the external system
+- SHOULD be used to store internal trace contexts (e.g., the span that created the event)
 
 ---
 
 ### headers
 
 A set of key-value pairs intended to be delivered to the external system as transport-level headers.
+**This data is intended for the message consumer.**
 
 - If present, MUST be included in the publish operation when the target system supports equivalent header semantics
 - MUST be preserved as-is during the publish operation
-- MAY be modified by the relay or publisher prior to publishing (e.g., for enrichment or tracing)
 - MAY be used by consumers for routing, filtering, or processing logic
 - MAY be empty
 
@@ -125,7 +128,7 @@ A set of key-value pairs intended to be delivered to the external system as tran
 The number of publish attempts for the event.
 
 - MUST be monotonically increasing
-- MUST be incremented on each publish attempt, including retries and replay
+- MUST be incremented before each publish attempt
 - MAY be used to determine retry behavior
 
 ---
@@ -144,8 +147,10 @@ Information about the last failure.
 The timestamp at which the event becomes eligible for processing.
 
 - MAY be used for delayed processing, retry backoff, or scheduling
-- Events MUST NOT be claimed before this time when the field is used
-- If not present, the event is considered immediately eligible for processing
+- If present, defines when the event becomes eligible for claiming
+- Events MUST NOT be claimed before this time
+- If not present, the event is immediately eligible
+- Lease expiration MAY override `available_at` and make the event immediately eligible for re-claiming
 
 ---
 
@@ -155,6 +160,16 @@ The timestamp at which the event was claimed.
 
 - MUST be set when the event transitions to `CLAIMED`
 - MAY be used for lease expiration or stuck detection
+- MUST be cleared when the event leaves the `CLAIMED` state unless retained for debugging purposes
+
+---
+
+### claimed_by
+
+An identifier for the specific relay instance that has claimed the event.
+
+- SHOULD be set when the event transitions to `CLAIMED`
+- SHOULD be used in conjunction with `claimed_at` to provide fencing and identify ownership in distributed environments
 
 ---
 
@@ -180,6 +195,7 @@ The following fields MUST NOT change after creation:
 - `ordering_key`
 - `partition_key`
 - `payload`
+- `headers`
 - `created_at`
 
 ---
@@ -188,9 +204,9 @@ The following fields MUST NOT change after creation:
 
 The following fields MAY change during processing:
 
-- `headers`
 - `state`
 - `attempts`
+- `claimed_by`
 - `last_error`
 - `available_at`
 - `claimed_at`
@@ -205,6 +221,14 @@ State transitions MUST follow the processing lifecycle defined in the Processing
 Invalid transitions MUST NOT occur.
 
 ---
+
+## Field Consistency Constraints
+
+The following invariants MUST hold:
+
+- `claimed_at` MUST be set if and only if `state = CLAIMED`
+- `published_at` MUST be set if and only if `state = PUBLISHED`
+- `claimed_by` MUST be set when `state = CLAIMED` if supported by the implementation
 
 ## Identity and Delivery Semantics
 
