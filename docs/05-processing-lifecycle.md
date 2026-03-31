@@ -15,9 +15,17 @@ This section specifies:
 
 ## State Machine
 
-> **Diagram placeholder**
->
-> A graphical representation of the state machine SHOULD be included here.
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> PENDING
+    PENDING --> CLAIMED: Claim
+    CLAIMED --> PUBLISHED: Publish Success
+    CLAIMED --> PENDING: Failure / Retry /<br/>Lease Expired
+    CLAIMED --> DEAD: Terminal Failure
+    PUBLISHED --> PENDING: Replay
+    DEAD --> PENDING: Replay
+```
 
 ---
 
@@ -40,6 +48,8 @@ Valid state transitions are:
 - `CLAIMED` → `PUBLISHED`
 - `CLAIMED` → `PENDING`
 - `CLAIMED` → `DEAD`
+- `PUBLISHED` → `PENDING` (Replay)
+- `DEAD` → `PENDING` (Replay)
 
 Transitions not listed above MUST NOT occur.
 
@@ -51,7 +61,8 @@ Transitions not listed above MUST NOT occur.
 
 - A relay selects an eligible event
 - The event MUST be claimed before processing
-- `claimed_at` MUST be set
+- `claimed_at` MUST be set to the current time
+- `claimed_by` SHOULD be set to the relay identifier
 - The event MUST NOT be claimed if it is not eligible (e.g., `available_at` is in the future)
 
 ---
@@ -72,6 +83,8 @@ Transitions not listed above MUST NOT occur.
 - `attempts` MUST be incremented
 - `last_error` SHOULD be updated
 - `available_at` MAY be updated for retry scheduling
+- `claimed_at` MUST be cleared (set to null)
+- `claimed_by` MUST be cleared (set to null)
 - Claim expiration or reaping MAY cause the event to become eligible for reprocessing by another relay
 
 ---
@@ -81,6 +94,16 @@ Transitions not listed above MUST NOT occur.
 - Occurs when termination conditions are met
 - The event MUST transition to `DEAD`
 - The event MUST NOT be retried automatically after this transition
+- `claimed_at` MUST be cleared
+- `claimed_by` MUST be cleared
+
+---
+
+### [Terminal State] → PENDING (Replay)
+
+- Occurs during manual or automated replay operations
+- The event returns to a processable state
+- Fields like `attempts` or `last_error` MAY be reset based on implementation policy
 
 ---
 
@@ -125,6 +148,7 @@ Once an event reaches a terminal state:
 - Multiple relays MAY process events concurrently
 - Under the default processing model:
   - duplicate processing MAY occur
+  - a relay SHOULD verify its claim (via `claimed_at` and `claimed_by`) before finalizing a transition to `PUBLISHED`
   - claim conflicts MAY occur
 - Implementations that enforce ordering MAY restrict concurrency and prevent duplicate processing within the scope of an ordering key
 - The system MUST remain correct under concurrent execution
