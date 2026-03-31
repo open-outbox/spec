@@ -5,13 +5,16 @@ pattern across different storages and message brokers.
 
 This specification defines:
 
-- the event model
-- processing lifecycle
-- delivery semantics
-- storage contract
-- publisher contract
-- retry and failure behavior
-- replay and operational controls
+- [Introduction](docs/01-introduction.md)
+- [Terminology and Concepts](docs/02-terminology-and-concepts.md)
+- [Event Model](docs/03-event-model.md)
+- [Delivery Semantics](docs/04-delivery-semantics.md)
+- [Processing Lifecycle](docs/05-processing-lifecycle.md)
+- [Store Contract](docs/06-store-contract.md)
+- [Publisher Contract](docs/07-publisher-contract.md)
+- [Retries and Failures](docs/08-retries-and-failures.md)
+- [Ordering and Partitioning](docs/09-ordering-and-partitioning.md)
+- [Operations and Replay](docs/10-replay-and-operations.md)
 
 The goal is to standardize outbox behavior independently from a specific 
 database, broker, or framework.
@@ -34,16 +37,3 @@ database, broker, or framework.
 ## Status
 
 Draft
-
-## Document Index
-
-- [Introduction](docs/01-introduction.md)
-- [Terminology and Concepts](docs/02-terminology-and-concepts.md)
-- [Event Model](docs/03-event-model.md)
-- [Delivery Semantics](docs/04-delivery-semantics.md)
-- [Processing Lifecycle](docs/05-processing-lifecycle.md)
-- [Storage Contract](docs/06-storage-contract.md)
-- [Publisher Contract](docs/07-publisher-contract.md)
-- [Retries and Failures](docs/08-retries-and-failures.md)
-- [Ordering and Partitioning](docs/09-ordering-and-partitioning.md)
-- [Operations and Replay](docs/10-operations-replay.md)

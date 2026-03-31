@@ -54,7 +54,7 @@ The data to be delivered to the external system.
 
 ### state
 
-The current [processing state](./02-terminology-and-concepts.md/#processing-state) of the event.
+The current [processing state](./02-terminology-and-concepts.md#processing-state) of the event.
 
 - MUST be one of:
   - `PENDING`

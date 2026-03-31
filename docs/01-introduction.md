@@ -11,8 +11,6 @@ This specification defines a common behavioral model for outbox systems.
 
 This specification focuses on:
 
-This specification focuses on:
-
 - durable event storage
 - event claiming and processing
 - publishing to an external broker or transport
