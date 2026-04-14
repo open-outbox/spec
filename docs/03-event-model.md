@@ -3,7 +3,6 @@
 ## Overview
 
 An **event** represents a **unit of work** to be published to an external system.
-
 The event model defines the canonical structure and semantics of an event:
 
 - required fields
@@ -20,8 +19,10 @@ An event MUST include at least the following fields:
 - `event_id`
 - `event_type`
 - `payload`
-- `state`
+- `status`  
+- `attempts`
 - `created_at`
+- `available_at`
 
 ### event_id
 
@@ -37,9 +38,9 @@ A unique identifier for the event.
 
 A logical identifier describing the type of the event.
 
-- MUST be a stable, versionable identifier (e.g., `user.created`, `order.updated`)
-- MUST be immutable
-- MUST NOT depend on the underlying transport or broker
+- **Stable & Versionable:** MUST be a clear identifier (e.g., `user.created`).
+- **Logical Mapping:** In many implementations, the `event_type` serves as the default **Destination** (e.g., the Kafka Topic or NATS Subject name).
+- **Transport Independence:** While the value may be used as a destination name, it MUST NOT include transport-specific protocols or wire-format details (e.g., `sqs://queue-name`).
 
 ---
 
@@ -53,14 +54,14 @@ The data to be delivered to the external system.
 
 ---
 
-### state
+### status
 
 The current [processing state](./02-terminology-and-concepts.md#processing-state) of the event.
 
 - MUST be one of:
   - `PENDING`
-  - `CLAIMED`
-  - `PUBLISHED`
+  - `DELIVERING`
+  - `DELIVERED`
   - `DEAD`
 - MUST be managed by the relay according to the processing lifecycle
 
@@ -72,6 +73,28 @@ The timestamp at which the event was created.
 
 - MUST be set when the event is persisted
 - MUST be immutable
+
+---
+
+### attempts
+
+The number of publish attempts for the event.
+
+- MUST be monotonically increasing
+- MUST be incremented before each publish attempt
+- MAY be used to determine retry behavior
+
+---
+
+### available_at
+
+The timestamp at which the event becomes eligible for processing.
+
+- MAY be used for delayed processing, retry backoff, or scheduling
+- If present, defines when the event becomes eligible for claiming
+- Events MUST NOT be claimed before this time
+- If not present, the event is immediately eligible
+- Lease expiration MAY override `available_at` and make the event immediately eligible for re-claiming
 
 ---
 
@@ -123,16 +146,6 @@ A set of key-value pairs intended to be delivered to the external system as tran
 
 ---
 
-### attempts
-
-The number of publish attempts for the event.
-
-- MUST be monotonically increasing
-- MUST be incremented before each publish attempt
-- MAY be used to determine retry behavior
-
----
-
 ### last_error
 
 Information about the last failure.
@@ -142,43 +155,40 @@ Information about the last failure.
 
 ---
 
-### available_at
-
-The timestamp at which the event becomes eligible for processing.
-
-- MAY be used for delayed processing, retry backoff, or scheduling
-- If present, defines when the event becomes eligible for claiming
-- Events MUST NOT be claimed before this time
-- If not present, the event is immediately eligible
-- Lease expiration MAY override `available_at` and make the event immediately eligible for re-claiming
-
----
-
-### claimed_at
+### locked_at
 
 The timestamp at which the event was claimed.
 
-- MUST be set when the event transitions to `CLAIMED`
+- MUST be set when the event transitions to `DELIVERING`
 - MAY be used for lease expiration or stuck detection
-- MUST be cleared when the event leaves the `CLAIMED` state unless retained for debugging purposes
+- MUST be cleared when the event leaves the `DELIVERING` status unless retained for debugging purposes
 
 ---
 
-### claimed_by
+### locked_by
 
 An identifier for the specific relay instance that has claimed the event.
 
-- SHOULD be set when the event transitions to `CLAIMED`
-- SHOULD be used in conjunction with `claimed_at` to provide fencing and identify ownership in distributed environments
+- SHOULD be set when the event transitions to `DELIVERING`
+- SHOULD be used in conjunction with `locked_at` to provide fencing 
+and identify ownership in distributed environments
 
 ---
 
-### published_at
+### delivered_at
 
 The timestamp at which the event was successfully published.
 
-- MUST be set when the event transitions to `PUBLISHED`
+- MUST be set when the event transitions to `DELIVERED`
 - MUST NOT be modified afterward
+
+---
+
+### updated_at
+
+The timestamp at which the event was updated.
+
+- MUST be set when any change happens to the event.
 
 ---
 
@@ -204,19 +214,21 @@ The following fields MUST NOT change after creation:
 
 The following fields MAY change during processing:
 
-- `state`
+- `status`
 - `attempts`
-- `claimed_by`
+- `locked_by`
 - `last_error`
 - `available_at`
-- `claimed_at`
-- `published_at`
+- `locked_at`
+- `delivered_at`
+- `updated_at`
 
 ---
 
-## State Constraints
+## Status Constraints
 
-State transitions MUST follow the processing lifecycle defined in the Processing Lifecycle section.
+Status transitions MUST follow the processing lifecycle defined in the
+[Processing Lifecycle](./05-processing-lifecycle.md) section.
 
 Invalid transitions MUST NOT occur.
 
@@ -226,9 +238,9 @@ Invalid transitions MUST NOT occur.
 
 The following invariants MUST hold:
 
-- `claimed_at` MUST be set if and only if `state = CLAIMED`
-- `published_at` MUST be set if and only if `state = PUBLISHED`
-- `claimed_by` MUST be set when `state = CLAIMED` if supported by the implementation
+- `locked_at` MUST be set if and only if `status = DELIVERING`
+- `delivered_at` MUST be set if and only if `status = DELIVERED`
+- `locked_by` MUST be set when `status = DELIVERING` if supported by the implementation
 
 ## Identity and Delivery Semantics
 
@@ -254,5 +266,5 @@ Additional fields MUST NOT violate:
 
 - delivery semantics
 - ordering guarantees
-- state transitions
+- status transitions
 - core field definitions
