@@ -1,54 +1,58 @@
-# OpenOutbox Spec
+# OpenOutbox Specification
 
-OpenOutbox is a specification for implementing the transactional outbox 
-pattern across different storages and message brokers.
+[![Status: Draft](https://img.shields.io/badge/Status-Draft-yellow.svg)](./#status)
 
-This specification is organized into the following sections:
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-### Foundations
+**Open Outbox** is a language-agnostic specification for the **Transactional Outbox Pattern**. It defines how events move from a primary storage (PostgreSQL, MongoDB) to a message broker (Kafka, NATS, RabbitMQ) with solid reliability.
 
-* [Introduction](docs/01-introduction.md) — Overview and purpose.
-* [Terminology and Concepts](docs/02-terminology-and-concepts.md) — Key definitions and actors.
+---
+
+## 🗺️ Specification Roadmap
+
+If you are new to OpenOutbox, start with the **Foundations**. If you are building an implementation, jump to **Technical Contracts**.
+
+### 🏛️ Foundations
+
+* [**Introduction**](docs/01-introduction.md) — The "Why" and the core problem solved.
+* [**Terminology**](docs/02-terminology-and-concepts.md) — Definitions for Relays, Producers, and Stores.
 
 ### Core Concepts
 
-* [Event Model](docs/03-event-model.md) — The structure of outbox records.
-* [Delivery Semantics](docs/04-delivery-semantics.md) — Guarantees and acknowledgement rules.
-* [Processing Lifecycle](docs/05-processing-lifecycle.md) — State transitions and flow.
+* [**Event Model**](docs/03-event-model.md) — Anatomy of an outbox record.
+* [**Delivery Semantics**](docs/04-delivery-semantics.md) — At-least-once vs. Exactly-once rules.
+* [**Processing Lifecycle**](docs/05-processing-lifecycle.md) — State transitions (Pending → Delivering → Published).
 
 ### Technical Contracts
 
-* [Store Contract](docs/06-store-contract.md) — Requirements for storage backends.
-* [Publisher Contract](docs/07-publisher-contract.md) — Requirements for message dispatchers.
+* [**Store Contract**](docs/06-store-contract.md) — How the database must behave.
+* [**Publisher Contract**](docs/07-publisher-contract.md) — How the broker must behave.
 
 ### Reliability & Scale
 
-* [Retries and Failures](docs/08-retries-and-failures.md) — Error handling and terminal states.
-* [Ordering and Partitioning](docs/09-ordering-and-partitioning.md) — Concurrency and sequence guarantees.
+* [**Retries and Failures**](docs/08-retries-and-failures.md) — Dead-lettering and backoff strategies.
+* [**Ordering & Partitioning**](docs/09-ordering-and-partitioning.md) — Maintaining sequence at scale.
 
 ### Management
 
-* [Operations and Replay](docs/10-replay-and-operations.md) — Inspection, recovery, and manual overrides.
+* [**Operations and Replay**](docs/10-replay-and-operations.md) — Manual overrides and disaster recovery.
 
-The goal is to standardize outbox behavior independently from a specific 
-database, broker, or framework.
+---
 
 ## Goals
 
-* define a portable outbox contract
-* separate semantics from implementation
-* support multiple storage and broker backends
-* make delivery guarantees explicit
-* standardize ordering and partitioning behaviors
-* enable conformance testing across implementations
+* **Portability:** Write your logic once, swap Postgres for MySQL or Kafka for NATS easily.
+* **Separation of Concerns:** Decouple delivery semantics from business logic.
+* **Explicit Guarantees:** No "magic" delivery; every failure mode is defined.
+* **Conformance:** Enable automated testing to prove an implementation follows the spec.
 
-## Non-goals
+## Non-Goals
 
-* defining a single required database schema
-* defining broker-specific wire protocols
-* guaranteeing exactly-once delivery across all systems
-* replacing broker-native semantics
+* We do **not** dictate a specific SQL schema (only the required fields).
+* We do **not** replace broker-native features (like Kafka's idempotent producer).
+
+---
 
 ## Status
 
-Draft
+Currently in **Draft**. We are validating the spec against the [Go-based Relay implementation](https://github.com/openoutbox/relay).
