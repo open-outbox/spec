@@ -46,7 +46,7 @@ has already reached a terminal state.
 
 ## Dead Event
 
-An event that has reached a **Termination Condition** (e.g., max attemts) and is 
+An event that has reached a **Termination Condition** (e.g., max attemts) and is
 no longer eligible for automatic processing.
 
 ## Partitioning & Ordering
