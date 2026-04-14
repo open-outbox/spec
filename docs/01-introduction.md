@@ -2,57 +2,39 @@
 
 ## Purpose
 
-The transactional outbox pattern is widely used to publish events reliably after database changes.  
-However, implementations often differ in storage model, broker integration, retry handling, and failure semantics.
+The transactional outbox pattern is a critical building block for reliable distributed systems, ensuring events are published only when database changes are committed. However, implementations often vary wildly in storage models, retry handling, and failure semantics.
 
-This specification defines a common behavioral model for outbox systems.
+**Open Outbox** defines a common behavioral model to standardize these systems, ensuring consistency regardless of the underlying technology.
 
 ## Scope
 
-This specification focuses on:
+This specification defines the requirements for:
 
-- **event production**: application-side requirements
-- durable event storage
-- event claiming and processing
-- publishing to an external broker or transport
-- delivery guarantees and semantics
-- acknowledgement and retry behavior
-- failure handling
-- ordering guarantees and constraints
-- operational inspection and querying of event state
-- replay and recovery operations
-- observability, metrics, and tracing
+* **Event Lifecycle:** From atomic persistence to successful broker acknowledgement.
+* **Delivery Semantics:** Explicit rules for at-least-once delivery and retry behavior.
+* **Reliability:** Handling ordering constraints, partitioning, and terminal failure states.
+* **Interoperability:** Standardized contracts for Storage (Stores) and Transports (Publishers).
+* **Operations:** Protocols for inspection, manual replay, and observability (metrics/tracing).
 
 ## Key Assumptions
 
-This specification assumes that:
+* **Atomic Persistence:** The outbox record and the application state change MUST be persisted within the same atomic durability boundary to prevent "dual-writes." This may be achieved via database transactions or atomic document writes.
+* **Eventual Consistency:** Publication to the external transport is asynchronous; the delay between persistence and publication is expected but should be minimized.
 
-- **Atomic Persistence**: The outbox record and the application state change MUST be persisted within the same atomic durability boundary. Implementations MAY satisfy this using a single atomic write unit or a database transaction, depending on the storage system.
-- **Eventual Consistency**: After atomic persistence succeeds, publication to the external transport occurs asynchronously and may be delayed
+## Design Principles
 
-## Design Principle
+OpenOutbox is built on the **Decoupling of Semantics from Implementation**. This allows for a "plug-and-play" architecture:
 
-This specification separates:
-
-- **semantics**: what the system guarantees
-- **contracts**: what storage and publisher components must provide
-- **implementation**: how a specific backend fulfills those contracts
-
-This separation allows for a **plug-and-play** architecture where storage (e.g., Postgres, MySQL) and publishers (e.g., Kafka, NATS) can be swapped without changing the delivery guarantees.
+1. **Semantics:** What the system guarantees (e.g., "Ordered Delivery").
+2. **Contracts:** What a component must provide (e.g., "Atomic Claiming").
+3. **Implementation:** The code fulfilling the contract (e.g., `postgres-store-v1`).
 
 ## Intended Audience
 
-This document is intended for:
-
-- library authors
-- platform engineers
-- infrastructure teams
-- teams building reusable event delivery systems
+* **Library Authors:** Building outbox implementations in any language.
+* **Platform Engineers:** Standardizing event-driven infrastructure across an organization.
+* **System Architects:** Evaluating delivery guarantees and failure modes.
 
 ## Terminology
 
-The key words **MUST**, **SHOULD**, and **MAY** in this specification are to be interpreted as requirement levels:
-
-- **MUST**: required behavior
-- **SHOULD**: recommended behavior
-- **MAY**: optional behavior
+The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
