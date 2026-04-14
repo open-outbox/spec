@@ -1,21 +1,21 @@
-# OpenOutbox Specification
+# Open Outbox Specification
 
 [![Status: Draft](https://img.shields.io/badge/Status-Draft-yellow.svg)](./#status)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Open Outbox** is a language-agnostic specification for the **Transactional Outbox Pattern**. It defines how events move from a primary storage (PostgreSQL, MongoDB) to a message broker (Kafka, NATS, RabbitMQ) with solid reliability.
+**Open Outbox** is a language-agnostic specification for the **Transactional Outbox Pattern**. It defines how events move from a primary storage (PostgreSQL, MySQL) to a message broker (Kafka, NATS, RabbitMQ) with solid reliability.
 
 ---
 
-## 🗺️ Specification Roadmap
+## Specification Roadmap
 
-If you are new to OpenOutbox, start with the **Foundations**. If you are building an implementation, jump to **Technical Contracts**.
+If you are new to Open Outbox, start with the **Foundations**. If you are building an implementation, jump to **Technical Contracts**.
 
-### 🏛️ Foundations
+### Foundations
 
 * [**Introduction**](docs/01-introduction.md) — The "Why" and the core problem solved.
-* [**Terminology**](docs/02-terminology-and-concepts.md) — Definitions for Relays, Producers, and Stores.
+* [**Terminology and Concepts**](docs/02-terminology-and-concepts.md) — Definitions for Relays, Producers, and Stores.
 
 ### Core Concepts
 
@@ -31,11 +31,11 @@ If you are new to OpenOutbox, start with the **Foundations**. If you are buildin
 ### Reliability & Scale
 
 * [**Retries and Failures**](docs/08-retries-and-failures.md) — Dead-lettering and backoff strategies.
-* [**Ordering & Partitioning**](docs/09-ordering-and-partitioning.md) — Maintaining sequence at scale.
+* [**Ordering and Partitioning**](docs/09-ordering-and-partitioning.md) — Maintaining sequence at scale.
 
 ### Management
 
-* [**Operations and Replay**](docs/10-replay-and-operations.md) — Manual overrides and disaster recovery.
+* [**Replay and Operations**](docs/10-replay-and-operations.md) — Manual overrides and disaster recovery.
 
 ---
 
