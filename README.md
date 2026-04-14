@@ -15,7 +15,7 @@ If you are new to Open Outbox, start with the **Foundations**. If you are buildi
 ### Foundations
 
 * [**Introduction**](docs/01-introduction.md) — The "Why" and the core problem solved.
-* [**Terminology and Concepts**](docs/02-terminology-and-concepts.md) — Definitions for Relays, Producers, and Stores.
+* [**Terminology**](docs/02-terminology.md) — Definitions for Relays, Producers, and Stores.
 
 ### Core Concepts
 
