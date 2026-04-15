@@ -3,157 +3,129 @@
 ## Overview
 
 An **event** represents a **unit of work** to be published to an external system.
-The event model defines the canonical structure and semantics of an event:
+This model defines the structure and semantics of an event, categorized by its
+role in the delivery lifecycle.
 
-- required fields
-- optional fields
-- field semantics
-- mutability constraints
+To support the principle of **Implementation Neutrality**, fields are divided into
+**Core Fields** (the message itself) and **Operational Metadata** (the control plane).
 
 ---
 
-## Required Fields
+## Core Fields (Mandatory)
 
-An event MUST include at least the following fields:
-
-- `event_id`
-- `event_type`
-- `payload`
-- `status`  
-- `attempts`
-- `created_at`
-- `available_at`
+These fields represent the event's identity and data. They MUST be present in all
+implementations (Polling, CDC, etc.) to ensure identity, sequence, and observability.
 
 ### event_id
 
-A unique identifier for the event.
-
-- MUST be unique within the outbox store.
-- MUST be immutable.
-- SHOULD use a globally unique format (e.g., UUID or ULID).
+- **Definition:** A unique identifier for the event.
+- **Requirements:** MUST be unique within the store and MUST be immutable.
+- **Recommendation:** SHOULD use globally unique formats like UUID or ULID.
 
 ### event_type
 
-A logical identifier describing the type of the event.
+- **Definition:** A logical identifier describing the nature of the event (e.g., `user.created`).
 
 - **Stable & Versionable:** MUST be a clear identifier (e.g., `user.created`).
-- **Logical Mapping:** Serves as the default destination (e.g., Kafka Topic or SQS Queue).
-- **Transport Independence:** MUST NOT include transport-specific protocols (e.g., `sqs://`).
+- **Requirements:** MUST be transport-independent. It serves as the primary hint for routing but
+SHOULD NOT contain protocol-specific strings (e.g., `topic://`).
 
 ### payload
 
-The business data to be delivered to the external system.
-
-- MUST be treated as opaque by the outbox system.
-- MUST NOT be modified after persistence.
-
-### status
-
-The current **processing state** of the event.
-
-- MUST be one of: `PENDING`, `DELIVERING`, `DELIVERED`, `DEAD`.
-- MUST be managed by the relay according to the [Processing Lifecycle](./05-processing-lifecycle.md).
+- **Definition:** The business data intended for the external system.
+- **Requirements:** MUST be treated as opaque by the outbox system and MUST NOT be modified after persistence.
 
 ### created_at
 
-The timestamp at which the event was created.
-
-- MUST be set when the event is persisted and MUST be immutable.
-
-### attempts
-
-The number of publish attempts for the event.
-
-- MUST be monotonically increasing.
-
-### available_at
-
-The timestamp at which the event becomes eligible for processing.
-
-- **Eligibility:** Events MUST NOT be claimed if `available_at` is in the future.
-- **Functionality:** Used for both retry backoff and scheduled (delayed) delivery.
+- **Definition:** The wall-clock time the event was persisted.
+- **Requirements:** MUST be set at creation and MUST be immutable.
+- **Purpose:** Essential for ordering tie-breakers, lag monitoring, and data retention policies.
 
 ---
 
-## Optional Fields
+## Operational Metadata (Strategy-Dependent)
+
+The requirement for these fields depends on the retrieval strategy and the desired reliability profile.
+
+| Field | Requirement | Context |
+| :--- | :--- | :--- |
+| `status` | **REQUIRED** | For all Polling and Sequential strategies. |
+| `attempts` | **REQUIRED** | For implementations supporting retries and backoff. |
+| `available_at` | **REQUIRED** | For scheduled delivery and retry eligibility. |
+| `locked_at` | **OPTIONAL** | Required for **Distributed Lease** (High-Availability) profiles. |
+| `locked_by` | **OPTIONAL** | Required for worker fencing in multi-node environments. |
+| `updated_at` | **OPTIONAL** | Required for **Implicit Heartbeat** or auto-healing strategies. |
+
+### status
+
+The processing state of the event. Valid states MUST include:
+
+- `PENDING`: Ready for processing.
+- `DELIVERING`: Currently claimed by a worker.
+- `DELIVERED`: Successfully published.
+- `DEAD`: Terminally failed; requires manual intervention.
+
+### available_at
+
+The timestamp when an event becomes eligible for processing. 
+
+- **Constraint:** A relay MUST NOT claim an event if `available_at > NOW()`.
+- **Usage:** Used for implementing exponential backoff and delayed event publication.
+
+### attempts
+
+A monotonically increasing counter of publish attempts.
+
+---
+
+## Routing & Transport Fields (Optional)
 
 ### partition_key
 
-A value used for routing or partitioning in the target transport.
-
-- MAY be used by the publisher to determine shard or partition placement.
+Used by the publisher to determine shard or partition placement in the
+target transport (e.g., Kafka partition).
 
 ### ordering_key
 
-A value used to define ordering scope. Events with the same key MUST be processed in order.
-
-### metadata
-
-Internal operational data (e.g., tracing IDs). **NOT intended for the external system.**
+Defines a specific ordering scope. Events sharing the same key MUST be processed
+in strict chronological order relative to each other.
 
 ### headers
 
-Key-value pairs intended for the **message consumer** (transport-level headers).
-
-- If present, MUST be included in the publish operation when the target system supports equivalent header semantics.
-- SHOULD be preserved as-is during the publish operation.
-- MAY be used by consumers for routing, filtering, or processing logic.
+Key-value pairs intended for the **message consumer** (e.g., `trace_id`, `content-type`).
+If present, these SHOULD be preserved and mapped to transport-level headers by the relay.
 
 ### last_error
 
-Information about the last failure.
-
-- MAY include error message or code.
-- SHOULD be updated on every failed attempt.
-
-### locked_at
-
-The timestamp at which the event was claimed for delivery.
-
-- MUST be set when the event transitions to `DELIVERING`.
-
-### locked_by
-
-An identifier for the specific relay instance that has claimed the event.
-
-- SHOULD be used in conjunction with `locked_at` to provide fencing in distributed environments.
-
-### delivered_at
-
-The timestamp at which the event was successfully published.
-
-- MUST be set when the event transitions to `DELIVERED`.
-
-### updated_at
-
-The timestamp at which the event was last modified.
-
-- MUST be updated whenever any field change occurs.
+Information regarding the most recent failure (e.g., error message or stack trace). 
+SHOULD be updated on every failed attempt to facilitate observability.
 
 ---
 
 ## Mutability Rules
 
-### Immutable fields
+To ensure data integrity, implementations MUST enforce the following mutability constraints:
 
-- `event_id`, `event_type`, `ordering_key`, `partition_key`, `payload`, `headers`, `created_at`
-
-### Mutable fields
-
-- `status`, `attempts`, `locked_by`, `last_error`, `available_at`, `locked_at`, `delivered_at`, `updated_at`
+- **Immutable Fields:** `event_id`, `event_type`, `payload`, `created_at`, `partition_key`, `ordering_key`, `headers`.
+- **Mutable Fields:** `status`, `attempts`, `available_at`, `locked_at`, `locked_by`, `last_error`, `updated_at`, `delivered_at`.
 
 ---
 
 ## Field Consistency Constraints
 
-The following invariants MUST hold:
+In implementations utilizing lifecycle metadata, the following invariants MUST hold:
 
-- `locked_at` MUST be set if and only if `status = DELIVERING`.
-- `delivered_at` MUST be set if and only if `status = DELIVERED`.
-- `locked_by` MUST be set when `status = DELIVERING` if supported by the implementation.
+1. **Lease Invariant:** `locked_at` MUST be set if and only if `status = DELIVERING`.
+2. **Completion Invariant:** `delivered_at` MUST be set if and only if `status = DELIVERED`.
+3. **Fencing Invariant:** In distributed environments, `locked_by` MUST be set 
+when `status = DELIVERING` to identify the owning worker and prevent collisions.
+4. **Backoff Invariant:** Upon a retryable failure, `available_at` MUST be updated to a 
+future timestamp, and `status` MUST be reset to `PENDING`.
 
 ---
 
 ## Extensibility
 
-Implementations MAY extend the event model with additional fields. Additional fields MUST NOT violate delivery semantics, ordering guarantees, or core field definitions.
+Implementations MAY extend the event model with additional fields
+(e.g., `tenant_id` or `source_service`). Additional fields MUST NOT violate
+delivery semantics, ordering guarantees, or core field definitions.
