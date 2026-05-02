@@ -1,0 +1,31 @@
+name: 📜 Spec Proposal (RFC)
+description: Propose a change or addition to the Open Outbox Specification
+labels: ["rfc", "specification"]
+body:
+  - type: textarea
+    id: abstract
+    attributes:
+      label: "Abstract"
+      description: "A short (1-2 sentence) summary of the proposed change."
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: "Motivation"
+      description: "Why is this change necessary? What problem does it solve for the ecosystem?"
+    validations:
+      required: false
+  - type: textarea
+    id: details
+    attributes:
+      label: "Proposed Specification Changes"
+      description: "Describe the changes to the protocol, schema, or requirements."
+      placeholder: "e.g., 'Every event must now include a `spec_version` field in the metadata...'"
+    validations:
+      required: false
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: "Backward Compatibility"
+      description: "Will this change break existing relays or database schemas?"

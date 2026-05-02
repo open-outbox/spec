@@ -1,8 +1,27 @@
+<p align="center">
+  <!-- Use an absolute URL for the logo if it's not in the spec repo yet -->
+  <a href="https://github.com/open-outbox/spec">
+    <img src="https://raw.githubusercontent.com/open-outbox/relay/main/docs/src/assets/logo.svg" width="250" alt="Open Outbox Specification">
+  </a>
+</p>
+
+<p align="center">
+    <em>The language-agnostic standard for reliable Transactional Outbox implementations.</em>
+</p>
+
+<p align="center">
+<a href="https://img.shields.io/badge/Status-Draft-yellow">
+    <img src="https://img.shields.io/badge/Status-Draft-yellow" alt="Status">
+</a>
+<a href="https://img.shields.io/badge/Version-1.0.0-blue">
+    <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
+</a>
+<a href="https://pkg.go.dev/github.com/open-outbox/relay">
+    <img src="https://img.shields.io/badge/Implementation-Go-007d9c?logo=go&logoColor=white" alt="Reference Implementation">
+</a>
+</p>
+
 # Open Outbox Specification
-
-[![Status: Draft](https://img.shields.io/badge/Status-Draft-yellow.svg)](./#status)
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Open Outbox** is a language-agnostic specification for the **Transactional Outbox Pattern**. It defines how events move from a primary storage (PostgreSQL, MySQL) to a message broker (Kafka, NATS, RabbitMQ) with solid reliability.
 
